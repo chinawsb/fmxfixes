@@ -309,9 +309,7 @@ begin
       RunTimerProc(true)
     else
       FTimer:=nil;
-    end
-  else
-    Log.d('FMXTimer',FTimer,'TTimerRunnable.run','Timer call times over needed');
+    end;
 end;
 
 procedure TTimerRunnable.RunTimerProc(AQueueNext:Boolean);
@@ -340,12 +338,10 @@ constructor TAndroidTimer.Create;
 begin
   FRunnable := TTimerRunnable.Create(Self, AInterval);
   FTimerProc := ATimerProc;
-  Log.d('FMXTimer',SElf,'Timer created');
 end;
 
 destructor TAndroidTimer.Destroy;
 begin
-  Log.d('FMXTimer',Self,'Timer Destroy');
   inherited;
 end;
 
