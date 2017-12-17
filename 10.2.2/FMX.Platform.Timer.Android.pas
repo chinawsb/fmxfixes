@@ -238,8 +238,8 @@ begin
   for AObj in FObjectMap.Values do
     begin
     ATimer:=AObj as TAndroidTimer;
-    if (ATimer.FRunnable.FNextTick>0) and (ATimer.FRunnable.FNextTick<=ATick) then
-       ATimer.FRunnable.run;
+    if (ATick- ATimer.FRunnable.FPriorTick)*1000+1>ATimer.FRunnable.FInterval then
+       ATimer.FRunnable.RunTimerProc(False);
     end;
 end;
 
@@ -277,7 +277,7 @@ begin
   FTimer := ATimer;
   FInterval := AInterval;
   FStartTick:=TimerService.GetTick;
-  FNextTick:=FStartTick+AInterval/100000;
+  FNextTick:=FStartTick+AInterval/1000;
   FPriorTick:=-1;
   MainHandler.postDelayed(Self, AInterval);
 end;
@@ -327,7 +327,7 @@ begin
         if ADelta<0 then
           MainHandler.post(Self)
         else
-          MainHandler.postDelayed(Self,ADelta);
+          MainHandler.postDelayed(Self,Trunc(ADelta*1000));
       end;
   end;
 end;
