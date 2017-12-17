@@ -110,8 +110,8 @@ type
     FInterval: Integer;
     FTimer: TAndroidTimer; // Strong reference in order to keep object
     //swish:Call the timer proc direct while ProcessQueueTimers
-    FPriorTick,FNextTick:Double;
-    FPendingCalls:Integer;
+    FStartTick,FPriorTick,FNextTick:Double;
+    FCallCount:Integer;
     FStopped: Boolean;
   private class var
     FMainHandler: JHandler;
@@ -121,6 +121,7 @@ type
     constructor Create(const ATimer: TAndroidTimer; const AInterval: Integer);
     destructor Destroy;override;
     procedure run; cdecl;
+    procedure RunTimerProc(AQueueNext:Boolean);
     class property MainHandler: JHandler read GetMainHandler;
   end;
 
@@ -275,9 +276,9 @@ begin
   inherited Create;
   FTimer := ATimer;
   FInterval := AInterval;
-  FNextTick:=TimerService.GetTick+AInterval/100000;
+  FStartTick:=TimerService.GetTick;
+  FNextTick:=FStartTick+AInterval/100000;
   FPriorTick:=-1;
-  FPendingCalls:=1;
   MainHandler.postDelayed(Self, AInterval);
 end;
 
@@ -297,23 +298,40 @@ end;
 procedure TTimerRunnable.run;
 var
   ATick:Double;
+  ACount:Integer;
 begin
-  Dec(FPendingCalls);
   ATick:=TimerService.GetTick;
-  if (ATick-FPriorTick)>=(FInterval/1000) then
+  ACount:=Trunc((ATick-FStartTick)*1000/FInterval+0.1);
+  if ACount>FCallCount then
     begin
-    if (not FStopped) and Assigned(TimerService) then
-    begin
-        ATick:=TimerService.GetTick;
-        FPriorTick:=ATick;
-        FTimer.TimerProc;
-        FNextTick:=ATick+FInterval/1000;
-        MainHandler.postDelayed(Self, FInterval);
-        Inc(FPendingCalls);
+    Inc(FCallCount);
+    if not FStopped then
+      RunTimerProc(true)
+    else
+      FTimer:=nil;
     end
-    else if FPendingCalls=0 then
-      FTimer := nil;
-    end;
+  else
+    Log.d('FMXTimer',FTimer,'TTimerRunnable.run','Timer call times over needed');
+end;
+
+procedure TTimerRunnable.RunTimerProc(AQueueNext:Boolean);
+var
+  ADelta:Double;
+begin
+  FPriorTick:=TimerService.GetTick;
+  try
+    FTimer.TimerProc;
+  finally
+    if AQueueNext then
+      begin
+        FNextTick:=FPriorTick+FInterval;
+        ADelta:=FNextTick-TimerService.GetTick;
+        if ADelta<0 then
+          MainHandler.post(Self)
+        else
+          MainHandler.postDelayed(Self,ADelta);
+      end;
+  end;
 end;
 
 { TAndroidTimer }
@@ -322,11 +340,12 @@ constructor TAndroidTimer.Create;
 begin
   FRunnable := TTimerRunnable.Create(Self, AInterval);
   FTimerProc := ATimerProc;
+  Log.d('FMXTimer',SElf,'Timer created');
 end;
 
 destructor TAndroidTimer.Destroy;
 begin
-
+  Log.d('FMXTimer',Self,'Timer Destroy');
   inherited;
 end;
 
