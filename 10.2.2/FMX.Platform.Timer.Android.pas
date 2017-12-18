@@ -323,7 +323,7 @@ begin
     if AQueueNext then
       begin
         FNextTick:=FPriorTick+FInterval;
-        MainHandler.postDelayed(Self,Trunc(ADelta*1000));
+        MainHandler.postDelayed(Self,Trunc(FInterval*1000));
 //        ADelta:=FNextTick-TimerService.GetTick;
 //        if ADelta<0 then
 //          MainHandler.post(Self)
