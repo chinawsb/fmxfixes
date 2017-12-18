@@ -238,7 +238,7 @@ begin
   for AObj in FObjectMap.Values do
     begin
     ATimer:=AObj as TAndroidTimer;
-    if (ATick- ATimer.FRunnable.FPriorTick)*1000+1>ATimer.FRunnable.FInterval then
+    if ((ATick- ATimer.FRunnable.FPriorTick)*1000+1)>ATimer.FRunnable.FInterval then
        ATimer.FRunnable.RunTimerProc(False);
     end;
 end;
@@ -283,8 +283,11 @@ begin
 end;
 
 destructor TTimerRunnable.Destroy;
+//var
+//  AExpectTimes:Integer;
 begin
-
+//  AExpectTimes:=Trunc(((TimerService.GetTick-FStartTick)*1000+1)/FInterval);
+//  Log.d('FMXTimer Expect call %d times,real is %d tims',[AExpectTimes,FCallCount]);
   inherited;
 end;
 
@@ -301,35 +304,30 @@ var
   ACount:Integer;
 begin
   ATick:=TimerService.GetTick;
-  ACount:=Trunc((ATick-FStartTick)*1000/FInterval+0.1);
+  ACount:=Trunc(((ATick-FStartTick)*1000+1)/FInterval);
   if ACount>FCallCount then
     begin
-    Inc(FCallCount);
     if not FStopped then
       RunTimerProc(true)
     else
       FTimer:=nil;
-    end;
+    end
+  else
+    MainHandler.postDelayed(Self,FInterval);
 end;
 
 procedure TTimerRunnable.RunTimerProc(AQueueNext:Boolean);
 var
   ADelta:Double;
 begin
+  Inc(FCallCount);
   FPriorTick:=TimerService.GetTick;
   try
     FTimer.TimerProc;
+    FNextTick:=FPriorTick+FInterval;
   finally
     if AQueueNext then
-      begin
-        FNextTick:=FPriorTick+FInterval;
-        MainHandler.postDelayed(Self,Trunc(FInterval*1000));
-//        ADelta:=FNextTick-TimerService.GetTick;
-//        if ADelta<0 then
-//          MainHandler.post(Self)
-//        else
-//          MainHandler.postDelayed(Self,Trunc(ADelta*1000));
-      end;
+        MainHandler.postDelayed(Self,FInterval);
   end;
 end;
 
