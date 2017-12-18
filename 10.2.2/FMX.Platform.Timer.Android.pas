@@ -109,14 +109,14 @@ type
   private
     FInterval: Integer;
     FTimer: TAndroidTimer; // Strong reference in order to keep object
-    //swish:Call the timer proc direct while ProcessQueueTimers
+    //swish:Use these variants to calc timer calls
     FStartTick,FPriorTick,FNextTick:Double;
-    FCallCount:Integer;
     FStopped: Boolean;
   private class var
     FMainHandler: JHandler;
   private
     class function GetMainHandler: JHandler; static;
+    procedure UpdateNext(ADoPost:Boolean);
   public
     constructor Create(const ATimer: TAndroidTimer; const AInterval: Integer);
     destructor Destroy;override;
@@ -238,7 +238,7 @@ begin
   for AObj in FObjectMap.Values do
     begin
     ATimer:=AObj as TAndroidTimer;
-    if ((ATick- ATimer.FRunnable.FPriorTick)*1000+1)>ATimer.FRunnable.FInterval then
+    if ((ATick- ATimer.FRunnable.FPriorTick)*1000)>=ATimer.FRunnable.FInterval then
        ATimer.FRunnable.RunTimerProc(False);
     end;
 end;
@@ -278,16 +278,12 @@ begin
   FInterval := AInterval;
   FStartTick:=TimerService.GetTick;
   FNextTick:=FStartTick+AInterval/1000;
-  FPriorTick:=-1;
+  FPriorTick:=FStartTick;
   MainHandler.postDelayed(Self, AInterval);
 end;
 
 destructor TTimerRunnable.Destroy;
-//var
-//  AExpectTimes:Integer;
 begin
-//  AExpectTimes:=Trunc(((TimerService.GetTick-FStartTick)*1000+1)/FInterval);
-//  Log.d('FMXTimer Expect call %d times,real is %d tims',[AExpectTimes,FCallCount]);
   inherited;
 end;
 
@@ -298,36 +294,36 @@ begin
   Result := FMainHandler;
 end;
 
-procedure TTimerRunnable.run;
+procedure TTimerRunnable.UpdateNext(ADoPost:Boolean);
 var
+  ATimes,ADelta:Integer;
   ATick:Double;
-  ACount:Integer;
 begin
   ATick:=TimerService.GetTick;
-  ACount:=Trunc(((ATick-FStartTick)*1000+1)/FInterval);
-  if ACount>FCallCount then
+  ATimes:=Trunc((ATick-FStartTick)*1000/FInterval);
+  FNextTick:=FStartTick+((ATimes+1)*FInterval)/1000;
+  if ADoPost then
     begin
-    if not FStopped then
-      RunTimerProc(true)
-    else
-      FTimer:=nil;
-    end
+    ADelta:=Trunc((FNextTick-ATick)*1000);
+    MainHandler.postDelayed(Self,ADelta);
+    end;
+end;
+
+procedure TTimerRunnable.run;
+begin
+  if not FStopped then
+    RunTimerProc(true)
   else
-    MainHandler.postDelayed(Self,FInterval);
+    FTimer:=nil;
 end;
 
 procedure TTimerRunnable.RunTimerProc(AQueueNext:Boolean);
-var
-  ADelta:Double;
 begin
-  Inc(FCallCount);
   FPriorTick:=TimerService.GetTick;
   try
     FTimer.TimerProc;
-    FNextTick:=FPriorTick+FInterval;
   finally
-    if AQueueNext then
-        MainHandler.postDelayed(Self,FInterval);
+    UpdateNext(AQueueNext);
   end;
 end;
 
