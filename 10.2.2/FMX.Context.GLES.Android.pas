@@ -71,11 +71,7 @@ const
   OES_packed_depth_stencil = 'GL_OES_packed_depth_stencil';
   OES_depth24 = 'GL_OES_depth24';
   NV_depth_nonlinear = 'GL_NV_depth_nonlinear';
-type
-  TAndroidQuitFix=class
-  private
 
-  end;
 function CreateEGLSurface(const Width, Height: Integer): EGLSurface;
 var
   Texture: JSurfaceTexture;

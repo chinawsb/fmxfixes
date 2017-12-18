@@ -74,7 +74,7 @@ uses
   FMX.Presentation.Style, FMX.Ani, FMX.Context.GLES.Android, FMX.Graphics.Android,
   FMX.MultiTouch.Android, FMX.VirtualKeyboard.Android, FMX.Gestures.Android, FMX.Dialogs.Android,
   FMX.Platform.Timer.Android, FMX.Platform.Device.Android, FMX.Platform.Logger.Android, FMX.Platform.SaveState.Android,
-  FMX.Platform.Screen.Android, FMX.Platform.Metrics.Android,Androidapi.Looper;
+  FMX.Platform.Screen.Android, FMX.Platform.Metrics.Android;
 
 type
 
@@ -1976,16 +1976,6 @@ procedure TPlatformAndroid.WakeMainThread(Sender: TObject);
 begin
   TAndroidHelper.Activity.runOnUiThread(FWakeMainThreadRunnable);
 end;
-type
-  Pandroid_poll_source=^android_poll_source;
-  android_poll_source = record
-    // The identifier of this source.  May be LOOPER_ID_MAIN or LOOPER_ID_INPUT.
-    id: Int32;
-    // The android_app this ident is associated with.
-    app: Pointer;
-    // Function to call to perform the standard processing of data from this source.
-    process: procedure(app: Pointer; source: Pandroid_poll_source); cdecl;
-  end;
 
 procedure TPlatformAndroid.InternalProcessMessages;
 var
