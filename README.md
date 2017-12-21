@@ -19,3 +19,7 @@ We are chinese developers,we are working for QDAC open source project.Visit our 
 License
 ======================
 It's free for all! If you want donate ,please visit http://blog.qdac.cc/?page_id=13 for more information.
+
+Limitions
+=====================
+This source codes is fixed by me,but for copyright reason, you should have the origin source code.
