@@ -5464,15 +5464,14 @@ begin
           'v': VLineToRel(StrToFloat(GetNumberFromString(PathString, Pos), USFormatSettings));
           'Q':
             begin
-              CurvePoint1:=GetPointFromString(PathString, Pos);
+              LastQCtrlPoint:=GetPointFromString(PathString, Pos);
               CurvePoint2:=GetPointFromString(PathString, Pos);
-              LastQCtrlPoint:=CurvePoint1;
-              QuadCurveTo(CurvePoint1, CurvePoint2);
+              QuadCurveTo(LastQCtrlPoint, CurvePoint2);
               while HasRelativeOffset(PathString, Pos) do
               begin
-                CurvePoint1 := GetPointFromString(PathString, Pos);
+                LastQCtrlPoint := GetPointFromString(PathString, Pos);
                 CurvePoint2 := GetPointFromString(PathString, Pos);
-                QuadCurveTo(CurvePoint1, CurvePoint2);
+                QuadCurveTo(LastQCtrlPoint, CurvePoint2);
               end;
             end;
           'q':
@@ -5484,8 +5483,9 @@ begin
               while HasRelativeOffset(PathString, Pos) do
               begin
                 CurvePoint1 := GetPointFromString(PathString, Pos);
+                LastQCtrlPoint:=CurvePoint1+LastPoint;
                 CurvePoint2:=GetPointFromString(PathString, Pos);
-                QuadCurveTo(LastPoint+CurvePoint1,LastPoint+CurvePoint2);
+                QuadCurveTo(LLastQCtrlPoint,LastPoint+CurvePoint2);
               end;
             end;
           'T':
