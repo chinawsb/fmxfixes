@@ -5485,7 +5485,7 @@ begin
                 CurvePoint1 := GetPointFromString(PathString, Pos);
                 LastQCtrlPoint:=CurvePoint1+LastPoint;
                 CurvePoint2:=GetPointFromString(PathString, Pos);
-                QuadCurveTo(LLastQCtrlPoint,LastPoint+CurvePoint2);
+                QuadCurveTo(LastQCtrlPoint,LastPoint+CurvePoint2);
               end;
             end;
           'T':
