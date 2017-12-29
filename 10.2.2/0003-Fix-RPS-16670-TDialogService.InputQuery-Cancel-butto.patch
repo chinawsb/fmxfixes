@@ -1,0 +1,29 @@
+From 07284b3fc42c980a011feadece8de41399f0829a Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Fri, 29 Dec 2017 11:16:17 +0800
+Subject: [PATCH 3/9] Fix RPS-16670 TDialogService.InputQuery Cancel button
+ does not work
+
+---
+ FMX.DialogHelper.pas | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/FMX.DialogHelper.pas b/FMX.DialogHelper.pas
+index ffefc27..f0c1ebe 100644
+--- a/FMX.DialogHelper.pas
++++ b/FMX.DialogHelper.pas
+@@ -560,7 +560,10 @@ begin
+         ACloseQueryProc(AResult, Values);
+     end);
+   if AModalAndSync then // Only for Win and OSX
+-    LForm.ShowModal
++    begin
++    LForm.FCanCancel:=true;
++    LForm.ShowModal;
++    end
+   else
+     LForm.Show;
+ end;
+-- 
+2.14.1.windows.1
+

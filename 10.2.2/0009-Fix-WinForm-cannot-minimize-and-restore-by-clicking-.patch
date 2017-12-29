@@ -1,0 +1,44 @@
+From 8913696857c857ffc42613f986616fd38cc8c6de Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Fri, 29 Dec 2017 11:24:22 +0800
+Subject: [PATCH 9/9] Fix WinForm cannot minimize and restore by clicking
+ taskbar
+
+---
+ FMX.Platform.Win.pas | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/FMX.Platform.Win.pas b/FMX.Platform.Win.pas
+index 6f8b395..015bfe2 100644
+--- a/FMX.Platform.Win.pas
++++ b/FMX.Platform.Win.pas
+@@ -2330,6 +2330,18 @@ begin
+                 PaintControl.PaintRects(UpdateRects);
+               WindowHandleToPlatform(LForm.Handle).UpdateLayer;
+             end;
++          WM_SHOWWINDOW://modify
++            begin
++              if (wParam = SW_SHOWNORMAL) and (lParam = SW_MAXIMIZE) then
++              begin
++                if LForm.WindowState = TWindowState.wsMaximized then
++                begin
++                  Winapi.Windows.ShowWindow(hWnd, SW_SHOWMAXIMIZED);
++                  exit;
++                end;
++              end;
++              Result := DefWindowProc(hwnd, uMsg, wParam, lParam);
++            end;
+           WM_WINDOWPOSCHANGING:
+             begin
+               if ([csLoading, csDesigning] * LForm.ComponentState = [csLoading]) then
+@@ -3313,6 +3325,7 @@ procedure TPlatformWin.Activate(const AForm: TCommonCustomForm);
+ var
+   Wnd: HWND;
+ begin
++  Exit;//modify
+   Wnd := FormToHWND(AForm);
+   if (not IsWindowVisible(Wnd)) or (IsIconic(Wnd)) then
+   begin
+-- 
+2.14.1.windows.1
+

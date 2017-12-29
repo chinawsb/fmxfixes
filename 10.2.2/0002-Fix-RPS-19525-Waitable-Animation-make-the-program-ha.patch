@@ -1,0 +1,237 @@
+From 143ae38e00358b26d7247c37d95cc7fc81a470da Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Fri, 29 Dec 2017 11:15:19 +0800
+Subject: [PATCH 2/9] Fix RPS-19525 Waitable Animation make the program hangup
+
+---
+ FMX.Context.GLES.Android.pas   | 10 +++++++++-
+ FMX.Platform.Android.pas       |  6 ++-
+ FMX.Platform.Timer.Android.pas | 85 +++++++++++++++++++++++++++++++++++++-----
+ 3 file changed, 89 insertions(+), 12 deletion(-)
+
+diff --git a/FMX.Context.GLES.Android.pas b/FMX.Context.GLES.Android.pas
+index bc510c8..f504306 100644
+--- a/FMX.Context.GLES.Android.pas
++++ b/FMX.Context.GLES.Android.pas
+@@ -222,9 +222,17 @@ begin
+   if eglChooseConfig(TCustomAndroidContext.SharedDisplay, @ConfigAttribs[0], @Result, 1, @NumConfigs) <> EGL_TRUE then
+     RaiseContextExceptionFmt(@SCannotCreateOpenGLContextWithCode, ['eglChooseConfig', eglGetError()]);
+ end;
+-
++var
++  AppTerminating:Boolean=false;
+ class procedure TCustomAndroidContext.CreateSharedContext;
++var
++  ASvc:IFMXApplicationService;
+ begin
++  if AppTerminating or (TPlatformServices.Current.SupportsPlatformService(IFMXApplicationService,ASvc) and ASvc.Terminating) then
++    begin
++    AppTerminating:=true;
++    Exit;
++    end;
+   if FSharedContext = nil then
+   begin
+     FSharedDisplay := eglGetDisplay(EGL_DEFAULT_DISPLAY);
+diff --git a/FMX.Platform.Android.pas b/FMX.Platform.Android.pas
+index 1b34a6c..47c72fc 100644
+--- a/FMX.Platform.Android.pas
++++ b/FMX.Platform.Android.pas
+@@ -1980,9 +1980,13 @@ end;
+ procedure TPlatformAndroid.InternalProcessMessages;
+ var
+   LDone: Boolean;
++  procedure ProcessAndroidMessage;
++  begin
++    FTimerService.ProcessQueueTimers;
++  end;
+ begin
+   CheckSynchronize;
+-
++  ProcessAndroidMessage;
+   WindowManager.RenderIfNeeds;
+   if not Terminating then
+     try
+diff --git a/FMX.Platform.Timer.Android.pas b/FMX.Platform.Timer.Android.pas
+index 815e3f7..73a1c92 100644
+--- a/FMX.Platform.Timer.Android.pas
++++ b/FMX.Platform.Timer.Android.pas
+@@ -109,13 +109,19 @@ type
+   private
+     FInterval: Integer;
+     FTimer: TAndroidTimer; // Strong reference in order to keep object
++    //swish:Use these variants to calc timer calls
++    FStartTick,FPriorTick,FNextTick:Double;
++    FStopped: Boolean;
+   private class var
+     FMainHandler: JHandler;
+   private
+     class function GetMainHandler: JHandler; static;
++    procedure UpdateNext(ADoPost:Boolean);
+   public
+     constructor Create(const ATimer: TAndroidTimer; const AInterval: Integer);
++    destructor Destroy;override;
+     procedure run; cdecl;
++    procedure RunTimerProc(AQueueNext:Boolean);
+     class property MainHandler: JHandler read GetMainHandler;
+   end;
+ 
+@@ -123,14 +129,17 @@ type
+   private
+     FRunnable: TTimerRunnable;
+     FTimerProc: TTimerProc;
+-    FStopped: Boolean;
++    function GetStopped: Boolean;
++
+   public
+     constructor Create(const AInterval: Integer; const ATimerProc: TTimerProc);
++    destructor Destroy;override;
+     procedure Stop;
+     property TimerProc: TTimerProc read FTimerProc;
+-    property Stopped: Boolean read FStopped;
++    property Stopped: Boolean read GetStopped;
+   end;
+-
++var
++  TimerService:TAndroidTimerService;
+ { TAndroidTimerService }
+ 
+ procedure TAndroidTimerService.AddToTimerQueue(const AHandle: TFmxHandle);
+@@ -148,7 +157,9 @@ end;
+ constructor TAndroidTimerService.Create;
+ begin
+   inherited;
++  TimerService:=Self;
+   RegisterService;
++  FObjectMap:=TDictionary<TFmxHandle, TObject>.Create;
+ end;
+ 
+ function TAndroidTimerService.CreateTimer(AInterval: Integer; ATimerProc: TTimerProc): TFmxHandle;
+@@ -160,6 +171,7 @@ begin
+   begin
+     Timer := TAndroidTimer.Create(AInterval, ATimerProc);
+     Result := TFmxHandle(Timer);
++    FObjectMap.Add(Result,Timer);
+   end;
+ end;
+ 
+@@ -170,6 +182,7 @@ end;
+ destructor TAndroidTimerService.Destroy;
+ begin
+   UnregisterService;
++  FreeAndNil(FObjectMap);
+   inherited;
+ end;
+ 
+@@ -183,6 +196,7 @@ begin
+   begin
+     Timer.Stop;
+     Result := True;
++    FObjectMap.Remove(ATimer);
+   end;
+ end;
+ 
+@@ -215,7 +229,18 @@ begin
+ end;
+ 
+ procedure TAndroidTimerService.ProcessQueueTimers;
++var
++  AObj:TObject;
++  ATimer:TAndroidTimer;
++  ATick:Double;
+ begin
++  ATick:=GetTick;
++  for AObj in FObjectMap.Values do
++    begin
++    ATimer:=AObj as TAndroidTimer;
++    if ((ATick- ATimer.FRunnable.FPriorTick)*1000)>=ATimer.FRunnable.FInterval then
++       ATimer.FRunnable.RunTimerProc(False);
++    end;
+ end;
+ 
+ procedure TAndroidTimerService.RegisterService;
+@@ -251,9 +276,17 @@ begin
+   inherited Create;
+   FTimer := ATimer;
+   FInterval := AInterval;
++  FStartTick:=TimerService.GetTick;
++  FNextTick:=FStartTick+AInterval/1000;
++  FPriorTick:=FStartTick;
+   MainHandler.postDelayed(Self, AInterval);
+ end;
+ 
++destructor TTimerRunnable.Destroy;
++begin
++  inherited;
++end;
++
+ class function TTimerRunnable.GetMainHandler: JHandler;
+ begin
+   if FMainHandler = nil then
+@@ -261,15 +294,37 @@ begin
+   Result := FMainHandler;
+ end;
+ 
++procedure TTimerRunnable.UpdateNext(ADoPost:Boolean);
++var
++  ATimes,ADelta:Integer;
++  ATick:Double;
++begin
++  ATick:=TimerService.GetTick;
++  ATimes:=Trunc((ATick-FStartTick)*1000/FInterval);
++  FNextTick:=FStartTick+((ATimes+1)*FInterval)/1000;
++  if ADoPost then
++    begin
++    ADelta:=Trunc((FNextTick-ATick)*1000);
++    MainHandler.postDelayed(Self,ADelta);
++    end;
++end;
++
+ procedure TTimerRunnable.run;
+ begin
+-  if not FTimer.Stopped then
+-  begin
+-    FTimer.TimerProc;
+-    MainHandler.postDelayed(Self, FInterval);
+-  end
++  if not FStopped then
++    RunTimerProc(true)
+   else
+-    FTimer := nil;
++    FTimer:=nil;
++end;
++
++procedure TTimerRunnable.RunTimerProc(AQueueNext:Boolean);
++begin
++  FPriorTick:=TimerService.GetTick;
++  try
++    FTimer.TimerProc;
++  finally
++    UpdateNext(AQueueNext);
++  end;
+ end;
+ 
+ { TAndroidTimer }
+@@ -280,9 +335,19 @@ begin
+   FTimerProc := ATimerProc;
+ end;
+ 
++destructor TAndroidTimer.Destroy;
++begin
++  inherited;
++end;
++
++function TAndroidTimer.GetStopped: Boolean;
++begin
++  Result:=FRunnable.FStopped;
++end;
++
+ procedure TAndroidTimer.Stop;
+ begin
+-  FStopped := True;
++  FRunnable.FStopped := True;
+ end;
+ 
+ { THandleQueue }
+-- 
+2.14.1.windows.1
+

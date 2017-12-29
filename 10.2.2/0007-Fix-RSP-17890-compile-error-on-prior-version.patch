@@ -1,0 +1,116 @@
+From 31bdda03f210131f847b719551e392e3a700306a Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Fri, 29 Dec 2017 11:22:08 +0800
+Subject: [PATCH 7/9] Fix RSP-17890 compile error on prior version
+
+---
+ FMX.Graphics.pas | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 57 insertions(+), 6 deletions(-)
+
+diff --git a/FMX.Graphics.pas b/FMX.Graphics.pas
+index 27c9cf8..3b177ec 100644
+--- a/FMX.Graphics.pas
++++ b/FMX.Graphics.pas
+@@ -5357,11 +5357,11 @@ procedure TPathData.SetPathString(const Value: string);
+ var
+   Builder, TokenBuilder: TStringBuilder;
+   PathString, Tokens: string;
+-  Radius, CurvePoint1, CurvePoint2, TempPoint: TPointF;
++  Radius, CurvePoint1, CurvePoint2, TempPoint,LastQCtrlPoint: TPointF;
+   Large, Sweet: Boolean;
+   Pos, I, LastLength: Integer;
+   Angle: Single;
+-  Token: Char;
++  Token,LastToken: Char;
+ begin
+   Builder := TStringBuilder.Create;
+   TokenBuilder := TStringBuilder.Create;
+@@ -5377,6 +5377,7 @@ begin
+     FPathData.Clear;
+     Pos := 0;
+     LastLength := -1;
++    LastToken:=#0;
+     while (Builder.Length > Pos) and (LastLength <> Pos) do
+     begin
+       LastLength := Pos;
+@@ -5461,14 +5462,62 @@ begin
+           'h': HLineToRel(StrToFloat(GetNumberFromString(PathString, Pos), USFormatSettings));
+           'V': VLineTo(StrToFloat(GetNumberFromString(PathString, Pos), USFormatSettings));
+           'v': VLineToRel(StrToFloat(GetNumberFromString(PathString, Pos), USFormatSettings));
+-          'Q', 'q':
++          'Q':
+             begin
+-              GetPointFromString(PathString, Pos);
+-              GetPointFromString(PathString, Pos);
++              LastQCtrlPoint:=GetPointFromString(PathString, Pos);
++              CurvePoint2:=GetPointFromString(PathString, Pos);
++              QuadCurveTo(LastQCtrlPoint, CurvePoint2);
++              while HasRelativeOffset(PathString, Pos) do
++              begin
++                LastQCtrlPoint := GetPointFromString(PathString, Pos);
++                CurvePoint2 := GetPointFromString(PathString, Pos);
++                QuadCurveTo(LastQCtrlPoint, CurvePoint2);
++              end;
++            end;
++          'q':
++            begin
++              CurvePoint1:=GetPointFromString(PathString, Pos);
++              CurvePoint2:=GetPointFromString(PathString, Pos);
++              LastQCtrlPoint:=CurvePoint1+LastPoint;
++              QuadCurveTo(LastQCtrlPoint,LastPoint+CurvePoint2);
++              while HasRelativeOffset(PathString, Pos) do
++              begin
++                CurvePoint1 := GetPointFromString(PathString, Pos);
++                LastQCtrlPoint:=CurvePoint1+LastPoint;
++                CurvePoint2:=GetPointFromString(PathString, Pos);
++                QuadCurveTo(LastQCtrlPoint,LastPoint+CurvePoint2);
++              end;
++            end;
++          'T':
++            begin
++              if (LastToken='Q') or(LastToken='q')  then
++                LastQCtrlPoint:=LastPoint+(LastPoint-LastQCtrlPoint)
++              else
++                LastQCtrlPoint:=LastPoint;
++              QuadCurveTo(LastQCtrlPoint,GetPointFromString(PathString, Pos));
++              while HasRelativeOffset(PathString,Pos) do
++                begin
++                   LastQCtrlPoint:=LastPoint+(LastPoint-LastQCtrlPoint);
++                   QuadCurveTo(LastQCtrlPoint,GetPointFromString(PathString, Pos));
++                end;
++            end;
++          't':
++            begin
++             if (LastToken='Q') or (LastToken<>'q') then
++                LastQCtrlPoint:=LastPoint+(LastPoint-LastQCtrlPoint)
++              else
++                LastQCtrlPoint:=LastPoint;
++              QuadCurveTo(LastQCtrlPoint,LastPoint+GetPointFromString(PathString, Pos));
++              while HasRelativeOffset(PathString,Pos) do
++                begin
++                   LastQCtrlPoint:=LastPoint+(LastPoint-LastQCtrlPoint);
++                   QuadCurveTo(LastQCtrlPoint,LastPoint+GetPointFromString(PathString, Pos));
++                end;
+             end;
+-          'T', 't': GetPointFromString(PathString, Pos);
+           'A', 'a':
+             begin
++             while HasRelativeOffset(PathString,Pos) do
++              begin
+               if Count > 0 then
+                 CurvePoint1 := FPathData[FPathData.Count - 1].Point
+               else
+@@ -5482,8 +5531,10 @@ begin
+               if Token = 'a' then
+                 CurvePoint2 := CurvePoint1 + CurvePoint2;
+               AddArcSvg(CurvePoint1, Radius, Angle, Large, Sweet, CurvePoint2);
++              end;
+             end;
+         end;
++        LastToken:=Token;
+       end;
+     end;
+     DoChanged;
+-- 
+2.14.1.windows.1
+
