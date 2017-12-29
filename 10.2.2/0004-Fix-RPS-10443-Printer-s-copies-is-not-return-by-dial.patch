@@ -1,0 +1,24 @@
+From 4d5cf578ea46b6235c87501e1c8ddbcc3413524a Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Fri, 29 Dec 2017 11:17:09 +0800
+Subject: [PATCH 4/9] Fix RPS-10443 Printer s copies is not return by dialog
+
+---
+ FMX.Dialogs.Win.pas | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/FMX.Dialogs.Win.pas b/FMX.Dialogs.Win.pas
+index eaa22e4..9c7a371 100644
+--- a/FMX.Dialogs.Win.pas
++++ b/FMX.Dialogs.Win.pas
+@@ -1366,6 +1366,7 @@ begin
+       APrintRange := TPrintRange.prAllPages;
+     AFromPage := PrintDlgRec.nFromPage;
+     AToPage := PrintDlgRec.nToPage;
++    ACopies:=PrintDlgRec.nCopies;//Fixed by swish
+   end
+   else
+   begin
+-- 
+2.14.1.windows.1
+

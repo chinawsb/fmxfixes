@@ -1,0 +1,32 @@
+From 8a273702183857c84a6733a0e0b67f77bcfe6c95 Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Fri, 29 Dec 2017 11:21:25 +0800
+Subject: [PATCH 6/9] Fix Bold and Italic Character display By Aone
+
+---
+ FMX.FontGlyphs.Android.pas | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/FMX.FontGlyphs.Android.pas b/FMX.FontGlyphs.Android.pas
+index dc1c706..dcc3cb1 100644
+--- a/FMX.FontGlyphs.Android.pas
++++ b/FMX.FontGlyphs.Android.pas
+@@ -143,6 +143,15 @@ begin
+       FPaint.getTextBounds(Text, 0, Text.length, Bounds);
+       if Bounds.left < 0 then
+         Width := Width - Bounds.left;
++{+++>}
++      // 加入修正代码: 文字斜粗显示 by Aone 2017.05.26
++      if FPaint.getTypeface.isItalic then
++      begin
++           if FPaint.getTypeface.isBold then
++                Width := Round(Width * 1.2375)
++           else Width := Round(Width * 1.125);
++      end;
++{<+++}
+       Bitmap := TJBitmap.JavaClass.createBitmap(Width, Height, TJBitmap_Config.JavaClass.ARGB_8888);
+       try
+         Canvas := TJCanvas.JavaClass.init(Bitmap);
+-- 
+2.14.1.windows.1
+
