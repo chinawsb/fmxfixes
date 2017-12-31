@@ -10,8 +10,8 @@ For copyright reason,I can't provide source directly.So you need check out patch
 How it works
 ======================
 1. Check out patch files
-2. Run merge.bat in the patch dir(For example 10.2.2).This will create a folder named "Final" and source code will be merged in here.
-** Note :patch tool need administrator rights for patch file.You need grant the rights on execute the batch file.
+2. Run merge.bat in the patch dir(For example 10.2.2).This will create a folder named "Final" and source code will be merged in here.<br/>
+[Note] Patch tool need administrator rights for patch file.You need grant the rights on execute the batch file.
 2. Put merged files into your project directory.
 3. Rebuild your project with fixed patch files.
 
