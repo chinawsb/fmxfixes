@@ -47,6 +47,9 @@ patch -i ..\0006-Fix-Bold-and-Italic-Character-display-By-Aone.patch
 echo Fix Windows minimize and restore button can't click error
 copy "%BDS%\Source\fmx\FMX.Platform.Win.pas" FMX.Platform.Win.pas /Y
 patch -i ..\0009-Fix-WinForm-cannot-minimize-and-restore-by-clicking-.patch
+copy "%BDS%\Source\fmx\FMX.Media.Android.pas" FMX.Media.Android.pas /Y
+patch -i ..\0010-Fix-RSP-19678-MediaPlayer-Time-Resolution.patch
+
 del patch.exe
 echo Patch done.If output any erorr,please manual process it.
 

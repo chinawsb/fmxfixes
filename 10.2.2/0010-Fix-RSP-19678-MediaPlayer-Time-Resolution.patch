@@ -1,0 +1,28 @@
+--- Origin\FMX.Media.Android.pas	2017-12-08 15:40:53.226082300 +0800
++++ Fixed\FMX.Media.Android.pas	2017-12-31 09:39:58.000000000 +0800
+@@ -1052,14 +1052,14 @@
+ function TAndroidMedia.GetCurrent: TMediaTime;
+ begin
+   if FPlayer <> nil then
+-    Result := FPlayer.getCurrentPosition
++    Result := FPlayer.getCurrentPosition*Int64(10000)
+   else
+     Result := 0;
+ end;
+ 
+ function TAndroidMedia.GetDuration: TMediaTime;
+ begin
+-  Result := FPlayer.getDuration;
++  Result := FPlayer.getDuration*Int64(10000);
+ end;
+ 
+ function TAndroidMedia.GetMediaState: TMediaState;
+@@ -1112,7 +1112,7 @@
+     NewPos := Value;
+     if NewPos < 0 then
+       NewPos := 0;
+-    FPlayer.seekTo(NewPos);
++    FPlayer.seekTo(NewPos div 10000);
+   end;
+ end;
+ 
