@@ -1,0 +1,19 @@
+ fmx/FMX.FontGlyphs.iOS.pas | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/fmx/FMX.FontGlyphs.iOS.pas b/fmx/FMX.FontGlyphs.iOS.pas
+index 05bd915..8b2326a 100644
+--- a/fmx/FMX.FontGlyphs.iOS.pas
++++ b/fmx/FMX.FontGlyphs.iOS.pas
+@@ -141,7 +141,10 @@ begin
+   Path := CGPathCreateMutable();
+   Bounds := CGRectMake(0, 0, BoundsLimit, BoundsLimit);
+   CGPathAddRect(Path, nil, Bounds);
+-  Chars := 'a';
++  if TOSVersion.Check(9) then // yangyxd 
++    Chars := '中'
++  else
++    Chars := 'a';
+   Str := CFStringCreateWithCharacters(kCFAllocatorDefault, PChar(Chars), 1);
+ 
+   Attr := CFAttributedStringCreateMutable(kCFAllocatorDefault, 0);
