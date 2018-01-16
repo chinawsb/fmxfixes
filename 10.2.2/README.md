@@ -14,5 +14,7 @@ Fixed bug list
   FMX.Context.GLES.Android not check application terminate and on finalization recreate share context.This make a 'DoFinalizeShader' error during android application exit.
 * [RSP-19768](https://quality.embarcadero.com/browse/RSP-19552)
   In android JMediaPlayer resolution is 1ms,But other platform and Help say the CurrentTime/DuringTime properrty should resolution at 100ns.We fix then FMX.Media.Android.pas for CurrentTime/DuringTime for work at same resolution.
+* [RSP-12694](https://quality.embarcadero.com/browse/RSP-12694) 
+  In iOS 9.0+,TIOSFontGlyphManager.GetDefaultBaseline calc baseline incorrect.This cause if your app have chinese and english characters in a single line,vertical alignment has a error effect.
 * Other fixes
   Other fixes is not my fix,but verified by other friends.I have not check RSP code. 
