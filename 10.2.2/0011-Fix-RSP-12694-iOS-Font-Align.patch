@@ -11,7 +11,7 @@ index 05bd915..8b2326a 100644
    CGPathAddRect(Path, nil, Bounds);
 -  Chars := 'a';
 +  if TOSVersion.Check(9) then // yangyxd 
-+    Chars := '中'
++    Chars := #20013
 +  else
 +    Chars := 'a';
    Str := CFStringCreateWithCharacters(kCFAllocatorDefault, PChar(Chars), 1);

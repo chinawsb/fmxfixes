@@ -11,7 +11,7 @@ if exist "%temp%\getadmin.vbs" del /f /q "%temp%\getadmin.vbs"
 exit
 :Admin
 for /f "tokens=1,2,* " %%i in ('REG QUERY HKEY_CURRENT_USER\Software\Embarcadero\BDS\19.0 /v RootDir ^| find /i "RootDir"') do set "BDS=%%k"
-if "%BDS%"=="" got NotInstall
+if "%BDS%"=="" goto NotInstall
 cd Final
 if ErrorLevel 1 goto CreateDir
 goto CopyFiles
@@ -49,6 +49,10 @@ copy "%BDS%\Source\fmx\FMX.Platform.Win.pas" FMX.Platform.Win.pas /Y
 patch -i ..\0009-Fix-WinForm-cannot-minimize-and-restore-by-clicking-.patch
 copy "%BDS%\Source\fmx\FMX.Media.Android.pas" FMX.Media.Android.pas /Y
 patch -i ..\0010-Fix-RSP-19678-MediaPlayer-Time-Resolution.patch
+echo Fix RSP-16590:English and Chinese characters aligment not correct
+copy "%BDS%\Source\fmx\FMX.FontGlyphs.iOS.pas" FMX.FontGlyphs.iOS.pas /Y
+patch -i ..\0011-Fix-RSP-12694-iOS-Font-Align.patch
+
 
 del patch.exe
 echo Patch done.If output any erorr,please manual process it.
