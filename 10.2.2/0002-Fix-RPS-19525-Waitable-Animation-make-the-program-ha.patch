@@ -34,20 +34,31 @@ index bc510c8..f504306 100644
      FSharedDisplay := eglGetDisplay(EGL_DEFAULT_DISPLAY);
 diff --git a/FMX.Platform.Android.pas b/FMX.Platform.Android.pas
 index 1b34a6c..47c72fc 100644
---- a/FMX.Platform.Android.pas
-+++ b/FMX.Platform.Android.pas
-@@ -1980,9 +1980,13 @@ end;
- procedure TPlatformAndroid.InternalProcessMessages;
- var
+--- origin\FMX.Platform.Android.pas	2018-01-22 20:26:16.000000000 +0800
++++ fixed\FMX.Platform.Android.pas	2018-01-22 21:42:24.000000000 +0800
+@@ -889,7 +889,15 @@
+ function TWindowManager.GetClientSize(const AForm: TCommonCustomForm): TPointF;
+ begin
+   if not IsPopupForm(AForm) then
+-    Result := TPointF.Create(ContentRect.Width, ContentRect.Height)
++    begin
++    if ContentRect.IsEmpty then
++      begin
++      with Screen.WorkAreaRect do
++        Result:=TPointF.Create(Width,Height);
++      end
++    else
++      Result := TPointF.Create(ContentRect.Width, ContentRect.Height)
++    end
+   else
+     Result := TAndroidWindowHandle(AForm.Handle).Bounds.Size;
+ end;
+@@ -1983,7 +1991,7 @@
    LDone: Boolean;
-+  procedure ProcessAndroidMessage;
-+  begin
-+    FTimerService.ProcessQueueTimers;
-+  end;
  begin
    CheckSynchronize;
 -
-+  ProcessAndroidMessage;
++  FTimerService.ProcessQueueTimers;
    WindowManager.RenderIfNeeds;
    if not Terminating then
      try
