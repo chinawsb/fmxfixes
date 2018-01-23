@@ -35,8 +35,22 @@ index bc510c8..f504306 100644
 diff --git a/FMX.Platform.Android.pas b/FMX.Platform.Android.pas
 index 1b34a6c..47c72fc 100644
 --- origin\FMX.Platform.Android.pas	2018-01-22 20:26:16.000000000 +0800
-+++ fixed\FMX.Platform.Android.pas	2018-01-22 21:42:24.000000000 +0800
-@@ -889,7 +889,15 @@
++++ fixed\FMX.Platform.Android.pas	2018-01-23 21:31:20.000000000 +0800
+@@ -632,7 +632,12 @@
+   Result := TAndroidWindowHandle.Create(AForm);
+   AddWindow(TAndroidWindowHandle(Result));
+   if not IsPopupForm(AForm) then
+-    TAndroidWindowHandle(Result).Bounds := TRectF.Create(ContentRect);
++    begin
++    if ContentRect.IsEmpty then
++      TAndroidWindowHandle(Result).Bounds :=Screen.DesktopRect
++    else
++      TAndroidWindowHandle(Result).Bounds := TRectF.Create(ContentRect);
++    end;
+ end;
+
+ destructor TWindowManager.Destroy;
+@@ -889,7 +894,15 @@
  function TWindowManager.GetClientSize(const AForm: TCommonCustomForm): TPointF;
  begin
    if not IsPopupForm(AForm) then
@@ -44,7 +58,7 @@ index 1b34a6c..47c72fc 100644
 +    begin
 +    if ContentRect.IsEmpty then
 +      begin
-+      with Screen.WorkAreaRect do
++      with Screen.DesktopRect do
 +        Result:=TPointF.Create(Width,Height);
 +      end
 +    else
@@ -53,7 +67,19 @@ index 1b34a6c..47c72fc 100644
    else
      Result := TAndroidWindowHandle(AForm.Handle).Bounds.Size;
  end;
-@@ -1983,7 +1991,7 @@
+@@ -1668,7 +1681,10 @@
+       else
+         MainActivity.setStatusBarVisibility(True);
+       try
+-        AForm.SetBounds(ContentRect.Left, ContentRect.Top, ContentRect.Width, ContentRect.Height);
++        if ContentRect.IsEmpty then
++          AForm.SetBounds(Screen.DesktopRect)
++        else
++          AForm.SetBounds(ContentRect.Left, ContentRect.Top, ContentRect.Width, ContentRect.Height);
+       except
+         Application.HandleException(AForm);
+       end;
+@@ -1983,7 +1999,7 @@
    LDone: Boolean;
  begin
    CheckSynchronize;
