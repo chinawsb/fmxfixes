@@ -10,6 +10,7 @@ Fixed bug list
   FMX.Graphics.TPathData.SetPathString not process Q/q/T/t command and A/a command implementation miss loop check.
 * [RSP-19525](https://quality.embarcadero.com/browse/RSP-19525)
   FMX.Platform.Timer.Android have a not complete timer impementation,and FMX.Platform.Android not call ProcessQueueTimers on InternalProcessMessages.This make any call message loop and wait timer action blocked,such as AnimateXXXWait function.
+  Offical hotfix published in 2018-2 fix this bug use a e~~~~ way.You can use these implementation with this fix safely(This will use offical fix instead,if you want use my fix for this bug,please change FMX.Ani.TThreadTimer base class back to TTimer).
 * [RSP-19552](https://quality.embarcadero.com/browse/RSP-19552)
   FMX.Context.GLES.Android not check application terminate and on finalization recreate share context.This make a 'DoFinalizeShader' error during android application exit.
 * [RSP-19768](https://quality.embarcadero.com/browse/RSP-19552)
